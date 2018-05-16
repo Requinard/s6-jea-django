@@ -1,0 +1,25 @@
+version: '3'
+volumes:
+  pg-data:
+  app-data:
+services:
+  postgres:
+    image: postgres:alpine
+    environment:
+    - POSTGRES_PASSWORD=haraka
+    - POSTGRES_USER=haraka
+    - POSTGRES_DB=haraka
+    ports:
+      - 5432:5432
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+  app:
+    restart: always
+    build: .
+    command: python3 manage.py runserver 0.0.0.0:8000
+    ports:
+    - 8000:8000
+    volumes:
+    - .:/code
+    depends_on:
+      - postgres
