@@ -2,6 +2,9 @@ version: '3'
 volumes:
   pg-data:
   app-data:
+networks:
+ webnet:
+ postgres:
 services:
   postgres:
     image: postgres:alpine
@@ -13,13 +16,26 @@ services:
       - 5432:5432
     volumes:
       - pg-data:/var/lib/postgresql/data
+    networks:
+      - postgres
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
   app:
     restart: always
-    build: .
+    image: requinard2/jea-kwetter
     command: python3 manage.py runserver 0.0.0.0:8000
+    environment:
+    - PRODUCTION=true
     ports:
     - 8000:8000
-    volumes:
-    - .:/code
     depends_on:
       - postgres
+    networks:
+      - webnet
+      - postgres
+    deploy:
+      replicas: 5
+      restart_policy:
+        condition: on-failure
