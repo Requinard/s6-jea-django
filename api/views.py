@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import viewsets, pagination, permissions, filters
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.serializers import UserSerializer, ProfileSerializer, KweetSerializer
@@ -22,8 +23,25 @@ class ProfileViewset(viewsets.ModelViewSet):
     search_fields = ('screenname',)
     ordering_fields = ('last_edited', 'created')
 
-    def create(self, request, *args, **kwargs):
-        return Response(status=405)
+    @action(detail=True, methods=['put, delete'])
+    def follow(self, request, *args, **kwargs):
+        obj = (self.get_object())
+        me = request.user
+
+        if request.method == "post":
+            if obj not in me.follows:
+                me.follows.append(obj)
+                me.save()
+                return Response(status=200, data=me)
+            else:
+                return Response(304, data=me)
+        else:
+            if obj in me.follows:
+                me.follows.remove(obj)
+                me.save()
+                return Response(status=200, data=me)
+            else:
+                return Response(status=304, data=me)
 
     def get_permissions(self):
         if self.action in ['destroy', 'create']:
@@ -55,3 +73,23 @@ class KweetViewset(viewsets.ModelViewSet):
         kweets = Kweet.objects.filter(profile__in=user.follows.all())
         serializer = KweetSerializer(kweets, many=True)
         return Response(serializer.data)
+
+    @action(methods=['put', 'delete'], detail=True)
+    def like(self, request, *args, **kwargs):
+        me = request.user
+        kweet = self.get_object()
+
+        if request.method == 'put':
+            if kweet not in me.likes:
+                me.likes.append(kweet)
+                me.save()
+                return Response(status=200, data=kweet)
+            else:
+                return Response(status=304, data=kweet)
+        else:
+            if kweet in me.likes:
+                me.likes.removes(kweet)
+                me.save()
+                return Response(status=200, data=kweet)
+            else:
+                return Response(status=304, data=kweet)

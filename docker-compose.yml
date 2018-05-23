@@ -1,29 +1,57 @@
 version: '3'
 volumes:
   pg-data:
+  bitnami-data:
   app-data:
 networks:
  webnet:
  postgres:
 services:
-  postgres:
-    image: postgres:alpine
+  postgres_master:
+    image: bitnami/postgresql:latest
     environment:
-    - POSTGRES_PASSWORD=haraka
-    - POSTGRES_USER=haraka
-    - POSTGRES_DB=haraka
+    - POSTGRESQL_PASSWORD=haraka
+    - POSTGRESQL_USERNAME=haraka
+    - POSTGRESQL_DATABASE=haraka
+    - POSTGRESQL_REPLICATION_MODE=master
+    - POSTGRESQL_REPLICATION_USER=replication
+    - POSTGRESQL_REPLICATION_PASSWORD=haraka
     ports:
       - 5432:5432
     volumes:
+      - bitnami-data:/bitnami
+    networks:
+      - webnet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+  postgres_slave:
+    image: bitnami/postgresql:latest
+    environment:
+    - POSTGRESQL_PASSWORD=haraka
+    - POSTGRESQL_USERNAME=haraka
+    - POSTGRESQL_DATABASE=haraka
+    - POSTGRESQL_REPLICATION_MODE=slave
+    - POSTGRESQL_REPLICATION_USER=replication
+    - POSTGRESQL_REPLICATION_PASSWORD=haraka
+    - POSTGRESQL_MASTER_PORT_NUMBER=5432
+    - POSTGRESQL_MASTER_HOST=postgres_master
+    ports:
+      - 5433:5432
+    volumes:
       - pg-data:/var/lib/postgresql/data
     networks:
-      - postgres
+      - webnet
+    depends_on:
+      - postgres_master
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
   app:
-    restart: always
     image: requinard2/jea-kwetter
     command: python3 manage.py runserver 0.0.0.0:8000
     environment:
@@ -31,10 +59,10 @@ services:
     ports:
     - 8000:8000
     depends_on:
-      - postgres
+      - postgres_slave
+      - postgres_master
     networks:
       - webnet
-      - postgres
     deploy:
       replicas: 5
       restart_policy:

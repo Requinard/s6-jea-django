@@ -72,23 +72,24 @@ WSGI_APPLICATION = 'kwetter.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
-print(DEBUG)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'haraka',
-        'USER': 'haraka',
-        'PASSWORD': 'haraka',
-        'HOST': 'postgres',
-        'PORT': 5432,
-    }
-}
-
-if DEBUG and False:
+DATABASES = {}
+if DEBUG:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'haraka',
+            'USER': 'haraka',
+            'PASSWORD': 'haraka',
+            'HOST': 'postgres_master',
+            'PORT': 5432,
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
