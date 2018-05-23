@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import viewsets, pagination, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from api.serializers import UserSerializer, ProfileSerializer, KweetSerializer
 from logic.models import Profile, Kweet
@@ -68,6 +69,9 @@ class KweetViewset(viewsets.ModelViewSet):
 
         return [perm() for perm in permission_classes]
 
+    def create(self, request, *args, **kwargs):
+        super(self, args, kwargs)
+
     def list(self, request, *args, **kwargs):
         user = request.user.profile
         kweets = Kweet.objects.filter(profile__in=user.follows.all())
@@ -93,3 +97,4 @@ class KweetViewset(viewsets.ModelViewSet):
                 return Response(status=200, data=kweet)
             else:
                 return Response(status=304, data=kweet)
+
