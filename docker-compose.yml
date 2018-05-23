@@ -3,9 +3,16 @@ volumes:
   pg-data:
   bitnami-data:
   app-data:
+  rabbit-disk-data:
+    driver: local
+  rabbit-ram-data:
+    driver: local
+  rabbit-stats-data:
+    driver: local
 networks:
  webnet:
  postgres:
+ mq:
 services:
   postgres_master:
     image: bitnami/postgresql:latest
@@ -67,3 +74,52 @@ services:
       replicas: 5
       restart_policy:
         condition: on-failure
+  stats:
+    image: bitnami/rabbitmq
+    environment:
+      - RABBITMQ_NODE_TYPE=stats
+      - RABBITMQ_NODE_NAME=rabbit@stats
+      - RABBITMQ_ERL_COOKIE=jealetsgo
+      - RABBITMQ_USERNAME=rabbit
+      - RABBITMQ_PASSWORD=rabbit
+    ports:
+      - 15672:15672
+    volumes:
+      - rabbit-stats-data:/bitnami
+    networks:
+      - webnet
+      - mq
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+  queue-disc1:
+    image: bitnami/rabbitmq
+    environment:
+      - RABBITMQ_NODE_TYPE=queue-disc
+      - RABBITMQ_NODE_NAME=rabbit@queue-disc1
+      - RABBITMQ_CLUSTER_NODE_NAME=rabbit@stats
+      - RABBITMQ_ERL_COOKIE=jealetsgo
+      - RABBITMQ_USERNAME=rabbit
+      - RABBITMQ_PASSWORD=rabbit
+    volumes:
+      - rabbit-disk-data:/bitnami
+    networks:
+      - webnet
+      - mq
+  queue-ram1:
+     image: bitnami/rabbitmq
+     environment:
+       - RABBITMQ_NODE_TYPE=queue-ram
+       - RABBITMQ_NODE_NAME=rabbit@queue-ram1
+       - RABBITMQ_CLUSTER_NODE_NAME=rabbit@stats
+       - RABBITMQ_ERL_COOKIE=jealetsgo
+       - RABBITMQ_USERNAME=rabbit
+       - RABBITMQ_PASSWORD=rabbit
+     volumes:
+       - rabbit-ram-data:/bitnami
+     networks:
+       - webnet
+       - mq
